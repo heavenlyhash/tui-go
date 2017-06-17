@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"strings"
+	"sync"
 )
 
 // ModMask is a mask of modifier keys.
@@ -288,6 +289,7 @@ type paintEvent struct{}
 // to be called on the render thread.
 type callbackEvent struct {
 	cbFn func()
+	wg   *sync.WaitGroup // optional; nil if no waiter
 }
 
 type event interface{}

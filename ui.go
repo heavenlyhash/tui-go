@@ -7,6 +7,7 @@ type UI interface {
 	SetFocusChain(ch FocusChain)
 	Run() error
 	Update(fn func())
+	SynchronousUpdate(fn func())
 	Quit()
 }
 

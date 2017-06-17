@@ -2,6 +2,7 @@ package tui
 
 import (
 	"image"
+	"sync"
 
 	"github.com/gdamore/tcell"
 )
@@ -123,6 +124,9 @@ func (ui *tcellUI) handleEvent(ev event) {
 	case callbackEvent:
 		e.cbFn()
 		ui.painter.Repaint(ui.root)
+		if e.wg != nil {
+			e.wg.Done()
+		}
 	case paintEvent:
 		ui.painter.Repaint(ui.root)
 	}
@@ -162,8 +166,24 @@ func (ui *tcellUI) Quit() {
 // other event handler callbacks may appear to work, but
 // is likely a race condition.  (Run your program with
 // `go run -race` or `go install -race` to detect this!)
+//
+// This function will return immediately, and your callback
+// runs after this function returns.
+// If you need to proceed only after the the callback and repaint
+// is complete, use the SynchronousUpdate method.
 func (ui *tcellUI) Update(fn func()) {
-	ui.eventQueue <- callbackEvent{fn}
+	ui.eventQueue <- callbackEvent{fn, nil}
+}
+
+// Schedule an update of the UI, running the given
+// function in the UI goroutine -- same as Update(), but
+// only returns after the update and repaint is complete.
+// Update() is sufficient for most uses.
+func (ui *tcellUI) SynchronousUpdate(fn func()) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	ui.eventQueue <- callbackEvent{fn, &wg}
+	wg.Wait()
 }
 
 var _ Surface = &tcellSurface{}
